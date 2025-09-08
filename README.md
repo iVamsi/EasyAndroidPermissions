@@ -4,13 +4,14 @@
 [![Compose](https://img.shields.io/badge/Compose-BOM%202025.08.01+-blue.svg)](https://developer.android.com/jetpack/compose)
 [![Android](https://img.shields.io/badge/Android-API%2024+-green.svg)](https://android-arsenal.com/api?level=24)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-1.0.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions/1.0.0)
+[![Maven Central](https://img.shields.io/badge/Maven%20Central-1.0.1-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions/1.0.1)
 
-A lightweight Android library that bridges the gap between ActivityResultContracts permission API and Kotlin Coroutines, enabling developers to request permissions using clean, sequential suspend functions within Compose applications.
+A lightweight Android library that bridges the gap between ActivityResultContracts permission API and Kotlin Coroutines, enabling developers to request permissions using clean, sequential suspend functions in both traditional Android components (Activities/Fragments) and Jetpack Compose applications.
 
 ## Features ✨
 
 - **Coroutine-First**: Use suspend functions for permission requests
+- **Multiple Contexts**: Works with Activities, Fragments, and Compose
 - **Compose Integration**: Seamless integration with Jetpack Compose
 - **Thread-Safe**: Handle concurrent permission requests correctly
 - **Lifecycle-Aware**: Proper integration with Android lifecycle
@@ -23,13 +24,81 @@ Add the dependency to your `build.gradle.kts` file:
 
 ```kotlin
 dependencies {
-    implementation("io.github.ivamsi:easyandroidpermissions:1.0.0")
+    implementation("io.github.ivamsi:easyandroidpermissions:1.0.1")
 }
 ```
 
 ## Quick Start 🚀
 
-### Basic Usage
+### Activity Usage
+
+```kotlin
+class MainActivity : ComponentActivity() {
+    private lateinit var permissionManager: PermissionManager
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Create permission manager
+        permissionManager = this.createPermissionManager()
+        // Or: permissionManager = PermissionManagerFactory.create(this)
+        
+        findViewById<Button>(R.id.cameraButton).setOnClickListener {
+            lifecycleScope.launch {
+                val isGranted = permissionManager.request(Manifest.permission.CAMERA)
+                if (isGranted) {
+                    // Permission granted - proceed with camera functionality
+                    openCamera()
+                } else {
+                    // Permission denied - show user feedback
+                    showPermissionDeniedMessage()
+                }
+            }
+        }
+    }
+}
+```
+
+### Fragment Usage
+
+```kotlin
+class CameraFragment : Fragment() {
+    private lateinit var permissionManager: PermissionManager
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Create permission manager
+        permissionManager = this.createPermissionManager()
+        // Or: permissionManager = PermissionManagerFactory.create(this)
+    }
+    
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        binding.recordButton.setOnClickListener {
+            viewLifecycleOwner.lifecycleScope.launch {
+                val permissions = listOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.RECORD_AUDIO
+                )
+                
+                val results = permissionManager.requestMultiple(permissions)
+                val allGranted = results.values.all { it }
+                
+                if (allGranted) {
+                    startRecording()
+                } else {
+                    val denied = results.filterValues { !it }.keys
+                    handleDeniedPermissions(denied)
+                }
+            }
+        }
+    }
+}
+```
+
+### Compose Usage
 
 ```kotlin
 @Composable
@@ -56,65 +125,47 @@ fun CameraScreen() {
 }
 ```
 
-### Multiple Permissions
+### Multiple Permissions (Works in all contexts)
 
 ```kotlin
-@Composable
-fun MediaScreen() {
-    val permissionManager = rememberPermissionManager()
-    val scope = rememberCoroutineScope()
-    
-    Button(
-        onClick = {
-            scope.launch {
-                val permissions = listOf(
-                    Manifest.permission.CAMERA,
-                    Manifest.permission.RECORD_AUDIO,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                )
-                
-                val results = permissionManager.requestMultiple(permissions)
-                
-                val allGranted = results.values.all { it }
-                if (allGranted) {
-                    // All permissions granted
-                    startMediaRecording()
-                } else {
-                    // Handle denied permissions
-                    val denied = results.filterValues { !it }.keys
-                    handleDeniedPermissions(denied)
-                }
-            }
-        }
-    ) {
-        Text("Start Recording")
-    }
+// In Activity, Fragment, or Compose - same API!
+val permissions = listOf(
+    Manifest.permission.CAMERA,
+    Manifest.permission.RECORD_AUDIO,
+    Manifest.permission.WRITE_EXTERNAL_STORAGE
+)
+
+val results = permissionManager.requestMultiple(permissions)
+val allGranted = results.values.all { it }
+
+if (allGranted) {
+    // All permissions granted
+    startMediaRecording()
+} else {
+    // Handle denied permissions
+    val denied = results.filterValues { !it }.keys
+    handleDeniedPermissions(denied)
 }
 ```
 
-### Check Permission Status
+### Check Permission Status (Works in all contexts)
 
 ```kotlin
-@Composable
-fun PermissionStatusScreen() {
-    val permissionManager = rememberPermissionManager()
-    
-    // Check single permission
-    val hasCameraPermission = permissionManager.isPermissionGranted(Manifest.permission.CAMERA)
-    
-    // Check multiple permissions
-    val permissions = listOf(
-        Manifest.permission.CAMERA,
-        Manifest.permission.RECORD_AUDIO
-    )
-    val permissionStatus = permissionManager.arePermissionsGranted(permissions)
-    
-    Column {
-        Text("Camera: ${if (hasCameraPermission) "Granted" else "Denied"}")
-        permissionStatus.forEach { (permission, isGranted) ->
-            Text("$permission: ${if (isGranted) "Granted" else "Denied"}")
-        }
-    }
+// Check single permission
+val hasCameraPermission = permissionManager.isPermissionGranted(Manifest.permission.CAMERA)
+
+// Check multiple permissions
+val permissions = listOf(
+    Manifest.permission.CAMERA,
+    Manifest.permission.RECORD_AUDIO
+)
+val permissionStatus = permissionManager.arePermissionsGranted(permissions)
+
+// Use the results as needed
+if (hasCameraPermission) {
+    // Camera is available
+} else {
+    // Request camera permission
 }
 ```
 
@@ -152,6 +203,18 @@ interface PermissionManager {
      */
     fun arePermissionsGranted(permissions: List<String>): Map<String, Boolean>
 }
+```
+
+### Factory Methods
+
+```kotlin
+// Extension functions for easy creation
+fun ComponentActivity.createPermissionManager(): PermissionManager
+fun Fragment.createPermissionManager(): PermissionManager
+
+// Factory methods
+PermissionManagerFactory.create(activity: ComponentActivity): PermissionManager
+PermissionManagerFactory.create(fragment: Fragment): PermissionManager
 ```
 
 ### Composable Functions
@@ -198,23 +261,12 @@ class MainActivity : ComponentActivity() {
 
 ### After (With EasyAndroidPermissions)
 ```kotlin
-@Composable
-fun CameraScreen() {
-    val permissionManager = rememberPermissionManager()
-    val scope = rememberCoroutineScope()
-    
-    Button(
-        onClick = {
-            scope.launch {
-                if (permissionManager.request(Manifest.permission.CAMERA)) {
-                    // Permission granted
-                } else {
-                    // Permission denied
-                }
-            }
-        }
-    ) {
-        Text("Open Camera")
+// Works the same in Activity, Fragment, or Compose!
+lifecycleScope.launch { // or viewLifecycleOwner.lifecycleScope in Fragment
+    if (permissionManager.request(Manifest.permission.CAMERA)) {
+        // Permission granted
+    } else {
+        // Permission denied
     }
 }
 ```
@@ -275,7 +327,14 @@ scope.launch {
 
 ## Sample App 📱
 
-Check out the [EasyAndroidPermissionsDemo](./EasyAndroidPermissionsDemo) module for a complete sample application demonstrating various use cases.
+Check out the [EasyAndroidPermissionsDemo](./EasyAndroidPermissionsDemo) module for a complete sample application demonstrating various use cases:
+
+- **Traditional Activity Demo**: XML layouts with ActivityPermissionManager
+- **Fragment Demo**: XML layouts with FragmentPermissionManager
+- **Individual Permission Requests**: Camera, microphone, location permissions
+- **Multiple Permission Requests**: Request multiple permissions at once
+- **Permission Status Tracking**: Real-time status display
+- **Proper Lifecycle Integration**: Activity and Fragment lifecycle handling
 
 ## Contributing 🤝
 

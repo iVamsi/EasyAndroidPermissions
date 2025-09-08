@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme colors -->
+    <color name="primary_color_dark">#0D47A1</color>
+    <color name="primary_dark_color_dark">#002171</color>
+    <color name="accent_color_dark">#03DAC6</color>
+    
+    <!-- Base application theme for Compose (Dark) -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <!-- Compose activities use NoActionBar -->
+        <item name="colorPrimary">@color/primary_color_dark</item>
+        <item name="colorPrimaryDark">@color/primary_dark_color_dark</item>
+        <item name="colorAccent">@color/accent_color_dark</item>
+        <item name="android:statusBarColor">@color/primary_dark_color_dark</item>
+    </style>
+
+    <!-- Theme for traditional AppCompat activities (Dark) -->
+    <style name="AppTheme.Traditional" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/primary_color_dark</item>
+        <item name="colorPrimaryDark">@color/primary_dark_color_dark</item>
+        <item name="colorAccent">@color/accent_color_dark</item>
+        <item name="android:statusBarColor">@color/primary_dark_color_dark</item>
+        <!-- ActionBar background -->
+        <item name="android:actionBarStyle">@style/CustomActionBarDark</item>
+        <item name="actionBarStyle">@style/CustomActionBarDark</item>
+    </style>
+    
+    <!-- Custom ActionBar style (Dark) -->
+    <style name="CustomActionBarDark" parent="Widget.AppCompat.ActionBar.Solid">
+        <item name="android:background">@color/primary_color_dark</item>
+        <item name="background">@color/primary_color_dark</item>
+        <item name="android:titleTextStyle">@style/CustomActionBarTitleDark</item>
+        <item name="titleTextStyle">@style/CustomActionBarTitleDark</item>
+    </style>
+    
+    <!-- Custom ActionBar title style (Dark) -->
+    <style name="CustomActionBarTitleDark" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+</resources>

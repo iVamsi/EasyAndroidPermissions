@@ -88,6 +88,32 @@ fun PermissionDemoScreen() {
             style = MaterialTheme.typography.bodyMedium
         )
 
+        // Navigation buttons for other demos
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(
+                onClick = {
+                    val intent = Intent(context, TraditionalActivity::class.java)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Activity Demo", maxLines = 1)
+            }
+            
+            OutlinedButton(
+                onClick = {
+                    val intent = Intent(context, FragmentHostActivity::class.java)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Fragment Demo", maxLines = 1)
+            }
+        }
+
         // Show welcome message
         LaunchedEffect(Unit) {
             delay(500) // Small delay to let UI settle

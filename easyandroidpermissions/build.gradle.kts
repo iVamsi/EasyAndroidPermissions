@@ -57,6 +57,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     
+    // Fragment support for non-Compose usage
+    implementation(libs.androidx.fragment.ktx)
+    
     // Optional dependencies
     compileOnly(libs.androidx.ui.tooling.preview)
     compileOnly(libs.androidx.material3)
@@ -78,7 +81,7 @@ mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
     
-    coordinates("io.github.ivamsi", "easyandroidpermissions", "1.0.0")
+    coordinates("io.github.ivamsi", "easyandroidpermissions", "1.0.1")
 
     pom {
         name.set("EasyAndroidPermissions")

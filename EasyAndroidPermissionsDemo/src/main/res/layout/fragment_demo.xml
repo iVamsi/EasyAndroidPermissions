@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/description_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="This demonstrates EasyAndroidPermissions usage in a traditional Fragment without Compose."
+        android:textSize="16sp"
+        android:layout_marginBottom="24dp"
+        android:lineSpacingExtra="4dp" />
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:text="Permission Status:\nLoading..."
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:fontFamily="monospace"
+            android:background="#F5F5F5" />
+
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Individual Permissions"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/camera_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📷 Request Camera Permission"
+        android:textSize="16sp"
+        android:padding="16dp"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/location_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📍 Request Location Permission"
+        android:textSize="16sp"
+        android:padding="16dp"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/microphone_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🎤 Request Microphone Permission"
+        android:textSize="16sp"
+        android:padding="16dp"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/multiple_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔐 Request Multiple Permissions"
+        android:textSize="16sp"
+        android:padding="16dp"
+        android:layout_marginBottom="12dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="16dp"
+        android:background="#E0E0E0" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="✨ Fragment Features Demonstrated"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="• FragmentPermissionManager usage\n• viewLifecycleOwner.lifecycleScope\n• Fragment lifecycle integration\n• Permission status checking\n• Error handling"
+        android:textSize="14sp"
+        android:lineSpacingExtra="2dp" />
+
+</LinearLayout>

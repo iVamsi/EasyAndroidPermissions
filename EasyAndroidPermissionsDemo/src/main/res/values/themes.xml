@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Define custom colors -->
+    <color name="primary_color">#1976D2</color>
+    <color name="primary_dark_color">#1565C0</color>
+    <color name="accent_color">#03DAC6</color>
+    
+    <!-- Colors used in dark theme (defined in base for lint) -->
+    <color name="primary_color_dark">#0D47A1</color>
+    <color name="primary_dark_color_dark">#002171</color>
+    <color name="accent_color_dark">#03DAC6</color>
+    
+    <!-- Base application theme for Compose -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <!-- Compose activities use NoActionBar -->
+        <item name="colorPrimary">@color/primary_color</item>
+        <item name="colorPrimaryDark">@color/primary_dark_color</item>
+        <item name="colorAccent">@color/accent_color</item>
+        <item name="android:statusBarColor">@color/primary_dark_color</item>
+    </style>
+
+    <!-- Theme for traditional AppCompat activities -->
+    <style name="AppTheme.Traditional" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/primary_color</item>
+        <item name="colorPrimaryDark">@color/primary_dark_color</item>
+        <item name="colorAccent">@color/accent_color</item>
+        <item name="android:statusBarColor">@color/primary_dark_color</item>
+        <!-- ActionBar background -->
+        <item name="android:actionBarStyle">@style/CustomActionBar</item>
+        <item name="actionBarStyle">@style/CustomActionBar</item>
+    </style>
+    
+    <!-- Custom ActionBar style -->
+    <style name="CustomActionBar" parent="Widget.AppCompat.ActionBar.Solid">
+        <item name="android:background">@color/primary_color</item>
+        <item name="background">@color/primary_color</item>
+        <item name="android:titleTextStyle">@style/CustomActionBarTitle</item>
+        <item name="titleTextStyle">@style/CustomActionBarTitle</item>
+    </style>
+    
+    <!-- Custom ActionBar title style -->
+    <style name="CustomActionBarTitle" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+</resources>
