@@ -1,10 +1,11 @@
 # EasyAndroidPermissions 🔐
 
+[![Android Weekly](https://androidweekly.net/issues/issue-694/badge)](https://androidweekly.net/issues/issue-694)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.0+-purple.svg)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Compose-BOM%202025.08.01+-blue.svg)](https://developer.android.com/jetpack/compose)
 [![Android](https://img.shields.io/badge/Android-API%2024+-green.svg)](https://android-arsenal.com/api?level=24)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-1.0.1-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions/1.0.1)
+[![Maven Central](https://img.shields.io/badge/Maven%20Central-1.0.2-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions/1.0.2)
 
 A lightweight Android library that bridges the gap between ActivityResultContracts permission API and Kotlin Coroutines, enabling developers to request permissions using clean, sequential suspend functions in both traditional Android components (Activities/Fragments) and Jetpack Compose applications.
 
@@ -24,7 +25,7 @@ Add the dependency to your `build.gradle.kts` file:
 
 ```kotlin
 dependencies {
-    implementation("io.github.ivamsi:easyandroidpermissions:1.0.1")
+    implementation("io.github.ivamsi:easyandroidpermissions:1.0.2")
 }
 ```
 

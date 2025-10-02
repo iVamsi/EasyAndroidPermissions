@@ -7,20 +7,46 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import com.vamsi.easyandroidpermissions.rememberPermissionManager
 import com.vamsi.easyandroidpermissions.demo.ui.theme.EasyAndroidPermissionsDemoTheme
+import com.vamsi.easyandroidpermissions.rememberPermissionManager
 import com.vamsi.snapnotify.SnapNotify
 import com.vamsi.snapnotify.SnapNotifyProvider
 import kotlinx.coroutines.delay
@@ -42,7 +68,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PermissionDemoScreen() {
+fun PermissionDemoScreen(modifier: Modifier = Modifier) {
     val permissionManager = rememberPermissionManager()
     val scope = rememberCoroutineScope()
     var permissionResults by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
@@ -76,13 +102,17 @@ fun PermissionDemoScreen() {
         permissionResults = currentStates
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         Text(
             text = "This demo shows how to use EasyAndroidPermissions to request Android permissions using coroutines in Compose. Watch for snackbar feedback powered by SnapNotify!",
             style = MaterialTheme.typography.bodyMedium
@@ -157,7 +187,7 @@ fun PermissionDemoScreen() {
 
                         // Check for any potential permanent denials and show hint
                         if (deniedCount > 0) {
-                            kotlinx.coroutines.delay(1000) // Small delay after first message
+                            delay(1000) // Small delay after first message
                             SnapNotify.showInfo("📝 Tip: If a permission was denied twice, you may need to enable it in Settings")
                         }
                     } else {
@@ -226,6 +256,7 @@ fun PermissionDemoScreen() {
                     }
                 }
             )
+        }
         }
     }
 

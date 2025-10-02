@@ -81,7 +81,7 @@ mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
     
-    coordinates("io.github.ivamsi", "easyandroidpermissions", "1.0.1")
+    coordinates("io.github.ivamsi", "easyandroidpermissions", "1.0.2")
 
     pom {
         name.set("EasyAndroidPermissions")
