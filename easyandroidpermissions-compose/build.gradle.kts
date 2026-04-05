@@ -1,4 +1,8 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.withType
 
 plugins {
     alias(libs.plugins.android.library)
@@ -91,7 +95,20 @@ mavenPublishing {
     configure(AndroidSingleVariantLibrary(
         variant = "release",
         sourcesJar = true,
-        publishJavadocJar = true
+        publishJavadocJar = false
     ))
+}
+
+val stubJavadocJar = tasks.register<Jar>("stubJavadocJar") {
+    archiveClassifier.set("javadoc")
+    from(layout.projectDirectory.dir("publish-javadoc"))
+}
+
+afterEvaluate {
+    extensions.configure<PublishingExtension> {
+        publications.withType<MavenPublication>().configureEach {
+            artifact(stubJavadocJar)
+        }
+    }
 }
 

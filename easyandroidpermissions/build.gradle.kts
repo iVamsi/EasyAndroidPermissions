@@ -1,4 +1,8 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.withType
 
 plugins {
     alias(libs.plugins.android.library)
@@ -96,6 +100,21 @@ mavenPublishing {
     configure(AndroidSingleVariantLibrary(
         variant = "release",
         sourcesJar = true,
-        publishJavadocJar = true
+        // AGP’s javaDocReleaseGeneration bundles Dokka with ASM too old for sealed JVM 17+
+        // types (e.g. PermissionResult) when target is JVM 21 — see publish-javadoc/README.txt.
+        publishJavadocJar = false
     ))
+}
+
+val stubJavadocJar = tasks.register<Jar>("stubJavadocJar") {
+    archiveClassifier.set("javadoc")
+    from(layout.projectDirectory.dir("publish-javadoc"))
+}
+
+afterEvaluate {
+    extensions.configure<PublishingExtension> {
+        publications.withType<MavenPublication>().configureEach {
+            artifact(stubJavadocJar)
+        }
+    }
 }
