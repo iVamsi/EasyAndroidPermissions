@@ -7,11 +7,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.commit
+import com.vamsi.easyandroidpermissions.PermissionManager
 
 /**
  * Activity that hosts the DemoFragment to demonstrate Fragment-based permission usage.
  *
- * This demonstrates FragmentPermissionManager usage within a Fragment context.
+ * This demonstrates fragment-scoped [PermissionManager] usage.
  */
 class FragmentHostActivity : AppCompatActivity() {
 
@@ -40,7 +41,7 @@ class FragmentHostActivity : AppCompatActivity() {
             insets
         }
 
-        // Load the fragment - this demonstrates FragmentPermissionManager
+        // Load the fragment - fragment-scoped PermissionManager demo
         if (savedInstanceState == null) {
             supportFragmentManager.commit {
                 replace(R.id.fragment_container, DemoFragment.newInstance())

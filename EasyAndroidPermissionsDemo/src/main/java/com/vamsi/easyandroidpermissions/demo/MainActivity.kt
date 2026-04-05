@@ -3,6 +3,7 @@ package com.vamsi.easyandroidpermissions.demo
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -34,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import com.vamsi.easyandroidpermissions.PermissionResult
+import com.vamsi.easyandroidpermissions.isGranted
 import com.vamsi.easyandroidpermissions.demo.ui.theme.EasyAndroidPermissionsDemoTheme
 import com.vamsi.easyandroidpermissions.rememberPermissionManager
 import com.vamsi.snapnotify.SnapNotify
@@ -71,35 +75,34 @@ class MainActivity : ComponentActivity() {
 fun PermissionDemoScreen(modifier: Modifier = Modifier) {
     val permissionManager = rememberPermissionManager()
     val scope = rememberCoroutineScope()
-    var permissionResults by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
-    val activity = context as? ComponentActivity
+    val trackedStates by permissionManager.permissionStates.collectAsState()
+    val commonPermissions = remember {
+        buildList {
+            add(Manifest.permission.CAMERA to "Camera")
+            add(Manifest.permission.RECORD_AUDIO to "Microphone")
+            add(Manifest.permission.ACCESS_FINE_LOCATION to "Location")
 
-    val commonPermissions =
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            listOf(
-                Manifest.permission.CAMERA to "Camera",
-                Manifest.permission.RECORD_AUDIO to "Microphone",
-                Manifest.permission.ACCESS_FINE_LOCATION to "Location",
-                Manifest.permission.BLUETOOTH_CONNECT to "Bluetooth"
-            )
-        } else {
-            listOf(
-                Manifest.permission.CAMERA to "Camera",
-                Manifest.permission.RECORD_AUDIO to "Microphone",
-                Manifest.permission.ACCESS_FINE_LOCATION to "Location",
-                Manifest.permission.ACCESS_COARSE_LOCATION to "Bluetooth (Legacy)"
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(Manifest.permission.BLUETOOTH_CONNECT to "Bluetooth")
+            } else {
+                add(Manifest.permission.ACCESS_COARSE_LOCATION to "Bluetooth (Legacy)")
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.NEARBY_WIFI_DEVICES to "Nearby Wi-Fi")
+            }
+
         }
+    }
 
-    // Check current permission states
+    // Prime the state flow with current permission states
     LaunchedEffect(Unit) {
-        val currentStates = commonPermissions.associate { (permission, _) ->
-            permission to permissionManager.isPermissionGranted(permission)
+        commonPermissions.forEach { (permission, _) ->
+            permissionManager.getPermissionState(permission)
         }
-        permissionResults = currentStates
     }
 
     Scaffold(
@@ -158,17 +161,17 @@ fun PermissionDemoScreen(modifier: Modifier = Modifier) {
                     val permissions = commonPermissions.map { it.first }
 
                     // Only request permissions that are not already granted
-                    val currentStatus = permissionManager.arePermissionsGranted(permissions)
-                    val permissionsToRequest = currentStatus.filterValues { !it }.keys.toList()
+                    val currentStatus = permissionManager.getPermissionStates(permissions)
+                    val permissionsToRequest = currentStatus
+                        .filterValues { !it.isGranted }
+                        .keys
+                        .toList()
 
                     if (permissionsToRequest.isNotEmpty()) {
                         val results = permissionManager.requestMultiple(permissionsToRequest)
-                        // Update all permission results
-                        permissionResults = permissionResults + currentStatus + results
-
                         // Show snackbar based on results
-                        val grantedCount = results.values.count { it }
-                        val deniedCount = results.values.count { !it }
+                        val grantedCount = results.values.count { it.isGranted }
+                        val deniedCount = results.values.count { !it.isGranted }
                         val totalRequested = results.size
 
                         when {
@@ -191,8 +194,7 @@ fun PermissionDemoScreen(modifier: Modifier = Modifier) {
                             SnapNotify.showInfo("📝 Tip: If a permission was denied twice, you may need to enable it in Settings")
                         }
                     } else {
-                        // All permissions are already granted, just update the UI
-                        permissionResults = permissionResults + currentStatus
+                        // All permissions are already granted
                         SnapNotify.showSuccess("✅ All permissions are already granted!")
                     }
 
@@ -223,34 +225,32 @@ fun PermissionDemoScreen(modifier: Modifier = Modifier) {
         commonPermissions.forEach { (permission, displayName) ->
             PermissionItem(
                 displayName = displayName,
-                isGranted = permissionResults[permission] ?: false,
+                state = trackedStates[permission],
                 onRequest = {
                     scope.launch {
                         // Request the permission - this will show dialog if not granted
                         val result = permissionManager.request(permission)
 
-                        // Update the UI with the result - create new map to trigger recomposition
-                        permissionResults = permissionResults.toMutableMap().apply {
-                            put(permission, result)
-                        }
+                        when (result) {
+                            PermissionResult.Granted -> {
+                                SnapNotify.showSuccess("✅ $displayName permission granted")
+                            }
 
-                        // Show snackbar feedback and handle permanent denial
-                        if (result) {
-                            SnapNotify.showSuccess("✅ $displayName permission granted")
-                        } else {
-                            // Check if this is permanent denial
-                            val shouldShowRationale = activity?.let {
-                                ActivityCompat.shouldShowRequestPermissionRationale(it, permission)
-                            } ?: false
+                            is PermissionResult.Denied -> {
+                                when {
+                                    result.shouldShowRationale -> {
+                                        SnapNotify.showError("❌ $displayName permission denied. Tap to try again.")
+                                    }
 
-                            if (shouldShowRationale) {
-                                // User denied but can ask again
-                                SnapNotify.showError("❌ $displayName permission denied. Tap to try again.")
-                            } else {
-                                // User denied with "Don't ask again" OR first denial (Android behavior varies)
-                                // Show settings dialog for commonly permanently denied permissions
-                                showSettingsDialog = displayName
-                                SnapNotify.showWarning("⚠️ $displayName permission denied. Check settings if needed.")
+                                    !result.canRequestAgain -> {
+                                        showSettingsDialog = displayName
+                                        SnapNotify.showWarning("⚠️ $displayName permission denied permanently. Open settings.")
+                                    }
+
+                                    else -> {
+                                        SnapNotify.showInfo("ℹ️ $displayName permission denied. Try again or check settings.")
+                                    }
+                                }
                             }
                         }
                     }
@@ -332,9 +332,16 @@ fun PermissionSettingsDialog(
 @Composable
 fun PermissionItem(
     displayName: String,
-    isGranted: Boolean,
+    state: PermissionResult?,
     onRequest: () -> Unit,
 ) {
+    val granted = state?.isGranted == true
+    val statusText = when (state) {
+        null -> "Not evaluated"
+        PermissionResult.Granted -> "Granted"
+        is PermissionResult.Denied -> if (state.canRequestAgain) "Denied" else "Denied (Settings needed)"
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -352,16 +359,16 @@ fun PermissionItem(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = if (isGranted) "Granted" else "Not granted",
+                    text = statusText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isGranted)
+                    color = if (granted)
                         MaterialTheme.colorScheme.primary
                     else
                         MaterialTheme.colorScheme.error
                 )
             }
 
-            if (!isGranted) {
+            if (!granted) {
                 Button(onClick = onRequest) {
                     Text("Request")
                 }

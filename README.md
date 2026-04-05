@@ -5,7 +5,7 @@
 [![Compose](https://img.shields.io/badge/Compose-BOM%202025.08.01+-blue.svg)](https://developer.android.com/jetpack/compose)
 [![Android](https://img.shields.io/badge/Android-API%2024+-green.svg)](https://android-arsenal.com/api?level=24)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-1.0.2-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions/1.0.2)
+[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.0.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.0.0)
 
 A lightweight Android library that bridges the gap between ActivityResultContracts permission API and Kotlin Coroutines, enabling developers to request permissions using clean, sequential suspend functions in both traditional Android components (Activities/Fragments) and Jetpack Compose applications.
 
@@ -21,13 +21,22 @@ A lightweight Android library that bridges the gap between ActivityResultContrac
 
 ## Installation 📦
 
-Add the dependency to your `build.gradle.kts` file:
+Add the dependencies to your `build.gradle.kts` file:
 
 ```kotlin
 dependencies {
-    implementation("io.github.ivamsi:easyandroidpermissions:1.0.2")
+    // Non-Compose apps: include only this line
+    implementation("io.github.ivamsi:easyandroidpermissions-core:2.0.0")
+
+    // Compose apps: include this line (it already pulls in -core transitively)
+    implementation("io.github.ivamsi:easyandroidpermissions-compose:2.0.0")
 }
 ```
+
+**Upgrading from 1.x?** See [MIGRATION.md](./MIGRATION.md) for coordinates, API changes, and code patterns.
+
+- **Only XML / View-based UI?** Keep just the `-core` line.
+- **Compose UI?** You can add only the `-compose` line because it has an `api` dependency on `-core`, or keep both lines if you want the explicit documentation-style block.
 
 ## Quick Start 🚀
 
@@ -46,13 +55,18 @@ class MainActivity : ComponentActivity() {
         
         findViewById<Button>(R.id.cameraButton).setOnClickListener {
             lifecycleScope.launch {
-                val isGranted = permissionManager.request(Manifest.permission.CAMERA)
-                if (isGranted) {
-                    // Permission granted - proceed with camera functionality
-                    openCamera()
-                } else {
-                    // Permission denied - show user feedback
-                    showPermissionDeniedMessage()
+                when (val result = permissionManager.request(Manifest.permission.CAMERA)) {
+                    PermissionResult.Granted -> {
+                        // Permission granted - proceed with camera functionality
+                        openCamera()
+                    }
+                    is PermissionResult.Denied -> {
+                        if (!result.canRequestAgain) {
+                            showSettingsPrompt()
+                        } else if (result.shouldShowRationale) {
+                            showPermissionEducation()
+                        }
+                    }
                 }
             }
         }
@@ -85,13 +99,12 @@ class CameraFragment : Fragment() {
                 )
                 
                 val results = permissionManager.requestMultiple(permissions)
-                val allGranted = results.values.all { it }
+                val denied = results.filterValues { !it.isGranted }
                 
-                if (allGranted) {
+                if (denied.isEmpty()) {
                     startRecording()
                 } else {
-                    val denied = results.filterValues { !it }.keys
-                    handleDeniedPermissions(denied)
+                    handleDeniedPermissions(denied.keys)
                 }
             }
         }
@@ -110,13 +123,15 @@ fun CameraScreen() {
     Button(
         onClick = {
             scope.launch {
-                val isGranted = permissionManager.request(Manifest.permission.CAMERA)
-                if (isGranted) {
-                    // Permission granted - proceed with camera functionality
-                    openCamera()
-                } else {
-                    // Permission denied - show user feedback
-                    showPermissionDeniedMessage()
+                when (val result = permissionManager.request(Manifest.permission.CAMERA)) {
+                    PermissionResult.Granted -> openCamera()
+                    is PermissionResult.Denied -> {
+                        if (!result.canRequestAgain) {
+                            showSettingsPrompt()
+                        } else {
+                            showPermissionDeniedMessage()
+                        }
+                    }
                 }
             }
         }
@@ -137,14 +152,14 @@ val permissions = listOf(
 )
 
 val results = permissionManager.requestMultiple(permissions)
-val allGranted = results.values.all { it }
+val allGranted = results.values.all { it.isGranted }
 
 if (allGranted) {
     // All permissions granted
     startMediaRecording()
 } else {
     // Handle denied permissions
-    val denied = results.filterValues { !it }.keys
+    val denied = results.filterValues { !it.isGranted }.keys
     handleDeniedPermissions(denied)
 }
 ```
@@ -153,22 +168,23 @@ if (allGranted) {
 
 ```kotlin
 // Check single permission
-val hasCameraPermission = permissionManager.isPermissionGranted(Manifest.permission.CAMERA)
+val cameraState = permissionManager.getPermissionState(Manifest.permission.CAMERA)
+if (cameraState.isGranted) {
+    startCamera()
+} else if (cameraState is PermissionResult.Denied && !cameraState.canRequestAgain) {
+    showSettingsPrompt()
+}
 
 // Check multiple permissions
-val permissions = listOf(
-    Manifest.permission.CAMERA,
-    Manifest.permission.RECORD_AUDIO
-)
-val permissionStatus = permissionManager.arePermissionsGranted(permissions)
+val permissions = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+val permissionStatus = permissionManager.getPermissionStates(permissions)
+val denied = permissionStatus.filterValues { !it.isGranted }.keys
 
-// Use the results as needed
-if (hasCameraPermission) {
-    // Camera is available
-} else {
-    // Request camera permission
-}
+// Observe tracked states (Compose example)
+val trackedStates by permissionManager.permissionStates.collectAsState()
 ```
+
+`permissionStates` is a cold `StateFlow` that emits whenever EasyAndroidPermissions learns about a new permission state (e.g., after a request or an explicit `getPermissionState()` call). It plugs directly into Compose via `collectAsState()` or into View-based UIs via `lifecycleScope.launch { permissionStates.collect { … } }`.
 
 ## API Reference 📚
 
@@ -176,33 +192,33 @@ if (hasCameraPermission) {
 
 ```kotlin
 interface PermissionManager {
-    /**
-     * Requests a single runtime permission.
-     * @param permission The permission to request
-     * @return true if granted, false if denied
-     */
-    suspend fun request(permission: String): Boolean
-    
-    /**
-     * Requests multiple runtime permissions.
-     * @param permissions List of permissions to request
-     * @return Map of permissions to their granted status
-     */
-    suspend fun requestMultiple(permissions: List<String>): Map<String, Boolean>
-    
-    /**
-     * Checks if a permission is currently granted.
-     * @param permission The permission to check
-     * @return true if granted, false otherwise
-     */
-    fun isPermissionGranted(permission: String): Boolean
-    
-    /**
-     * Checks multiple permissions' granted status.
-     * @param permissions List of permissions to check
-     * @return Map of permissions to their granted status
-     */
-    fun arePermissionsGranted(permissions: List<String>): Map<String, Boolean>
+    val permissionStates: StateFlow<Map<String, PermissionResult>>
+
+    @MainThread
+    @CheckResult
+    suspend fun request(permission: String): PermissionResult
+
+    @MainThread
+    @CheckResult
+    suspend fun requestMultiple(permissions: List<String>): Map<String, PermissionResult>
+
+    fun getPermissionState(permission: String): PermissionResult
+    fun getPermissionStates(permissions: List<String>): Map<String, PermissionResult>
+
+    fun shouldShowRationale(permission: String): Boolean
+    fun canRequestAgain(permission: String): Boolean
+}
+```
+
+### PermissionResult
+
+```kotlin
+sealed interface PermissionResult {
+    data object Granted : PermissionResult
+    data class Denied(
+        val canRequestAgain: Boolean,
+        val shouldShowRationale: Boolean
+    ) : PermissionResult
 }
 ```
 
@@ -216,6 +232,12 @@ fun Fragment.createPermissionManager(): PermissionManager
 // Factory methods
 PermissionManagerFactory.create(activity: ComponentActivity): PermissionManager
 PermissionManagerFactory.create(fragment: Fragment): PermissionManager
+PermissionManagerFactory.create(
+    lifecycleOwner: LifecycleOwner,
+    caller: ActivityResultCaller,
+    contextProvider: () -> Context?,
+    rationaleProvider: (String) -> Boolean = { false }
+): PermissionManager
 ```
 
 ### Composable Functions
@@ -264,10 +286,9 @@ class MainActivity : ComponentActivity() {
 ```kotlin
 // Works the same in Activity, Fragment, or Compose!
 lifecycleScope.launch { // or viewLifecycleOwner.lifecycleScope in Fragment
-    if (permissionManager.request(Manifest.permission.CAMERA)) {
-        // Permission granted
-    } else {
-        // Permission denied
+    when (permissionManager.request(Manifest.permission.CAMERA)) {
+        PermissionResult.Granted -> { /* proceed */ }
+        is PermissionResult.Denied -> { /* explain or open settings */ }
     }
 }
 ```
@@ -279,11 +300,9 @@ lifecycleScope.launch { // or viewLifecycleOwner.lifecycleScope in Fragment
 ```kotlin
 scope.launch {
     try {
-        val isGranted = permissionManager.request(Manifest.permission.CAMERA)
-        if (isGranted) {
-            openCamera()
-        } else {
-            showPermissionEducation()
+        when (val result = permissionManager.request(Manifest.permission.CAMERA)) {
+            PermissionResult.Granted -> openCamera()
+            is PermissionResult.Denied -> showPermissionEducation()
         }
     } catch (e: Exception) {
         // Handle any unexpected errors
@@ -297,10 +316,10 @@ scope.launch {
 ```kotlin
 scope.launch {
     // Only request if not already granted
-    if (!permissionManager.isPermissionGranted(Manifest.permission.LOCATION)) {
-        val isGranted = permissionManager.request(Manifest.permission.LOCATION)
-        if (isGranted) {
-            startLocationUpdates()
+    if (!permissionManager.getPermissionState(Manifest.permission.LOCATION).isGranted) {
+        when (permissionManager.request(Manifest.permission.LOCATION)) {
+            PermissionResult.Granted -> startLocationUpdates()
+            is PermissionResult.Denied -> { /* handle */ }
         }
     } else {
         // Already granted
@@ -319,6 +338,12 @@ scope.launch {
 
 4. **Use the minimal required permissions**: Only request permissions your app actually needs.
 
+### Android 14 & 15 Updates
+
+- Android 13+ introduces `NEARBY_WIFI_DEVICES`; Android 14 adds background sensor gating via `BODY_SENSORS_BACKGROUND`. Declare these permissions (see the demo manifest) and request them only on supported API levels.
+- When `PermissionResult.Denied.canRequestAgain` is `false`, Google expects you to route the user to Settings using `Context.createPermissionSettingsIntent()`. Follow the [official guidance](https://developer.android.com/training/permissions/requesting).
+- Android 15 special cases (e.g., `SCHEDULE_EXACT_ALARM`, background sensors) sometimes require additional UX or policy disclosures. Review the [Android 15 behavior changes](https://developer.android.com/about/versions/15/behavior-changes-all#runtime-permissions) before shipping.
+
 ## Requirements 📋
 
 - **Minimum SDK**: API 24 (Android 7.0)
@@ -330,8 +355,8 @@ scope.launch {
 
 Check out the [EasyAndroidPermissionsDemo](./EasyAndroidPermissionsDemo) module for a complete sample application demonstrating various use cases:
 
-- **Traditional Activity Demo**: XML layouts with ActivityPermissionManager
-- **Fragment Demo**: XML layouts with FragmentPermissionManager
+- **Traditional Activity Demo**: XML layouts with the lifecycle-aware permission manager
+- **Fragment Demo**: XML layouts with the same lifecycle-aware APIs
 - **Individual Permission Requests**: Camera, microphone, location permissions
 - **Multiple Permission Requests**: Request multiple permissions at once
 - **Permission Status Tracking**: Real-time status display

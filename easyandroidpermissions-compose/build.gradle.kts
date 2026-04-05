@@ -3,16 +3,17 @@ import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     id("com.vanniktech.maven.publish") version "0.34.0"
 }
 
 android {
-    namespace = "com.vamsi.easyandroidpermissions"
+    namespace = "com.vamsi.easyandroidpermissions.compose"
     compileSdk = 36
 
     defaultConfig {
         minSdk = 24
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
         consumerProguardFiles("consumer-rules.pro")
     }
 
@@ -33,40 +34,34 @@ android {
 }
 
 kotlin {
-    explicitApi()
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
 
 dependencies {
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.android)
+    api(project(":easyandroidpermissions-core"))
+    api(platform(libs.androidx.compose.bom))
+    api(libs.androidx.compose.runtime)
 
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.fragment.ktx)
-    implementation(libs.androidx.annotation)
+    implementation(libs.kotlinx.coroutines.android)
 
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.mockk)
-    testImplementation(libs.robolectric)
-
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
 
 mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
 
-    coordinates("io.github.ivamsi", "easyandroidpermissions-core", "2.0.0")
+    coordinates("io.github.ivamsi", "easyandroidpermissions-compose", "2.0.0")
 
     pom {
-        name.set("EasyAndroidPermissions Core")
-        description.set("Coroutine-friendly runtime permission manager for Activities and Fragments")
+        name.set("EasyAndroidPermissions Compose")
+        description.set("Jetpack Compose helpers for EasyAndroidPermissions")
         url.set("https://github.com/ivamsi/easyandroidpermissions")
         inceptionYear.set("2025")
 
@@ -99,3 +94,4 @@ mavenPublishing {
         publishJavadocJar = true
     ))
 }
+

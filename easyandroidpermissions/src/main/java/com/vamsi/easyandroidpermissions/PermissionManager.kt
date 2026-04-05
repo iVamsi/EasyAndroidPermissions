@@ -1,42 +1,61 @@
 package com.vamsi.easyandroidpermissions
 
+import kotlinx.coroutines.flow.StateFlow
+
 /**
  * Interface for managing Android runtime permissions using coroutines.
  * 
  * This interface provides suspend functions to request permissions in a sequential,
- * coroutine-friendly manner within Compose applications.
+ * coroutine-friendly manner from activities, fragments, or other hosts that provide
+ * [androidx.lifecycle.LifecycleOwner] and [androidx.activity.result.ActivityResultCaller].
  */
-interface PermissionManager {
-    
+public interface PermissionManager {
+
+    /**
+     * Cold [StateFlow] that reflects the latest known permission states tracked by this manager.
+     */
+    public val permissionStates: StateFlow<Map<String, PermissionResult>>
+
     /**
      * Requests a single runtime permission.
-     * 
+     *
      * @param permission The permission to request (e.g., Manifest.permission.CAMERA)
-     * @return true if the permission is granted, false if denied
+     * @return A [PermissionResult] describing the outcome.
      */
-    suspend fun request(permission: String): Boolean
-    
+    @androidx.annotation.MainThread
+    @androidx.annotation.CheckResult
+    public suspend fun request(permission: String): PermissionResult
+
     /**
      * Requests multiple runtime permissions.
-     * 
+     *
      * @param permissions List of permissions to request
-     * @return Map of permissions to their granted status
+     * @return Map of permissions to their granted status.
      */
-    suspend fun requestMultiple(permissions: List<String>): Map<String, Boolean>
-    
+    @androidx.annotation.MainThread
+    @androidx.annotation.CheckResult
+    public suspend fun requestMultiple(permissions: List<String>): Map<String, PermissionResult>
+
     /**
-     * Checks if a permission is currently granted.
-     * 
-     * @param permission The permission to check
-     * @return true if granted, false if not granted
+     * Returns the current status of a permission without triggering a system dialog.
      */
-    fun isPermissionGranted(permission: String): Boolean
-    
+    public fun getPermissionState(permission: String): PermissionResult
+
     /**
-     * Checks if multiple permissions are currently granted.
-     * 
-     * @param permissions List of permissions to check
-     * @return Map of permissions to their granted status
+     * Returns the current status for multiple permissions without triggering dialogs.
      */
-    fun arePermissionsGranted(permissions: List<String>): Map<String, Boolean>
+    public fun getPermissionStates(permissions: List<String>): Map<String, PermissionResult>
+
+    /**
+     * Mirrors [androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale] for the current host.
+     */
+    public fun shouldShowRationale(permission: String): Boolean
+
+    /**
+     * Returns true if the permission can be requested again without directing the user to Settings.
+     */
+    public fun canRequestAgain(permission: String): Boolean = when (val state = getPermissionState(permission)) {
+        is PermissionResult.Granted -> false
+        is PermissionResult.Denied -> state.canRequestAgain
+    }
 }

@@ -12,14 +12,16 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.vamsi.easyandroidpermissions.PermissionManager
+import com.vamsi.easyandroidpermissions.PermissionResult
 import com.vamsi.easyandroidpermissions.createPermissionManager
+import com.vamsi.easyandroidpermissions.isGranted
 import kotlinx.coroutines.launch
 
 /**
- * Demo Fragment showing FragmentPermissionManager usage of EasyAndroidPermissions.
- * 
- * This demonstrates how to use FragmentPermissionManager in traditional Android Fragments
- * without Jetpack Compose, with proper Fragment lifecycle integration.
+ * Demo Fragment showing [PermissionManager] usage from a [Fragment] host.
+ *
+ * Demonstrates traditional (non-Compose) fragments with `createPermissionManager()` and
+ * fragment lifecycle integration.
  */
 class DemoFragment : Fragment() {
     
@@ -65,8 +67,8 @@ class DemoFragment : Fragment() {
         // Using viewLifecycleOwner to properly handle Fragment lifecycle
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val granted = permissionManager.request(Manifest.permission.CAMERA)
-                if (granted) {
+                val result = permissionManager.request(Manifest.permission.CAMERA)
+                if (result.isGranted) {
                     showToast("✅ Camera permission granted!")
                 } else {
                     showToast("❌ Camera permission denied")
@@ -81,8 +83,8 @@ class DemoFragment : Fragment() {
     private fun requestLocationPermission() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val granted = permissionManager.request(Manifest.permission.ACCESS_FINE_LOCATION)
-                if (granted) {
+                val result = permissionManager.request(Manifest.permission.ACCESS_FINE_LOCATION)
+                if (result.isGranted) {
                     showToast("✅ Location permission granted!")
                 } else {
                     showToast("❌ Location permission denied")
@@ -97,8 +99,8 @@ class DemoFragment : Fragment() {
     private fun requestMicrophonePermission() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val granted = permissionManager.request(Manifest.permission.RECORD_AUDIO)
-                if (granted) {
+                val result = permissionManager.request(Manifest.permission.RECORD_AUDIO)
+                if (result.isGranted) {
                     showToast("✅ Microphone permission granted!")
                 } else {
                     showToast("❌ Microphone permission denied")
@@ -120,7 +122,7 @@ class DemoFragment : Fragment() {
                 )
                 
                 val results = permissionManager.requestMultiple(permissions)
-                val granted = results.values.count { it }
+                val granted = results.values.count { it.isGranted }
                 val total = results.size
                 
                 if (granted == total) {
@@ -144,7 +146,7 @@ class DemoFragment : Fragment() {
         )
         
         val status = permissions.map { (permission, name) ->
-            val granted = permissionManager.isPermissionGranted(permission)
+            val granted = permissionManager.getPermissionState(permission).isGranted
             "$name: ${if (granted) "✅ Granted" else "❌ Not granted"}"
         }.joinToString("\n")
         

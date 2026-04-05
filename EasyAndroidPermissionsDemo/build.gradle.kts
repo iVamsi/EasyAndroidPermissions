@@ -54,7 +54,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":easyandroidpermissions"))
+    implementation(project(":easyandroidpermissions-compose"))
     
     // SnapNotify for elegant snackbars
     implementation(libs.snapnotify)

@@ -20,5 +20,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "EasyAndroidPermissions"
-include(":easyandroidpermissions")
+include(":easyandroidpermissions-core")
+project(":easyandroidpermissions-core").projectDir = file("easyandroidpermissions")
+include(":easyandroidpermissions-compose")
 include(":EasyAndroidPermissionsDemo")

@@ -7,7 +7,7 @@ import kotlinx.coroutines.CompletableDeferred
  */
 internal data class PermissionRequest(
     val permission: String,
-    val deferred: CompletableDeferred<Boolean>
+    val deferred: CompletableDeferred<com.vamsi.easyandroidpermissions.PermissionResult>
 )
 
 /**
@@ -15,5 +15,5 @@ internal data class PermissionRequest(
  */
 internal data class MultiplePermissionRequest(
     val permissions: List<String>,
-    val deferred: CompletableDeferred<Map<String, Boolean>>
+    val deferred: CompletableDeferred<Map<String, com.vamsi.easyandroidpermissions.PermissionResult>>
 )

@@ -96,7 +96,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="• FragmentPermissionManager usage\n• viewLifecycleOwner.lifecycleScope\n• Fragment lifecycle integration\n• Permission status checking\n• Error handling"
+        android:text="• Fragment createPermissionManager()\n• viewLifecycleOwner.lifecycleScope\n• Fragment lifecycle integration\n• Permission status checking\n• Error handling"
         android:textSize="14sp"
         android:lineSpacingExtra="2dp" />
 
