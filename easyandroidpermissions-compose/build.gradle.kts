@@ -1,4 +1,6 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SourcesJar
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.configure
@@ -6,9 +8,8 @@ import org.gradle.kotlin.dsl.withType
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.vanniktech.maven.publish") version "0.34.0"
+    alias(libs.plugins.vanniktech.maven.publish)
 }
 
 android {
@@ -61,7 +62,7 @@ mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
 
-    coordinates("io.github.ivamsi", "easyandroidpermissions-compose", "2.0.0")
+    coordinates("io.github.ivamsi", "easyandroidpermissions-compose", "2.1.0")
 
     pom {
         name.set("EasyAndroidPermissions Compose")
@@ -94,8 +95,8 @@ mavenPublishing {
 
     configure(AndroidSingleVariantLibrary(
         variant = "release",
-        sourcesJar = true,
-        publishJavadocJar = false
+        sourcesJar = SourcesJar.Sources(),
+        javadocJar = JavadocJar.None(),
     ))
 }
 

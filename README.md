@@ -1,11 +1,11 @@
 # EasyAndroidPermissions 🔐
 
 [![Android Weekly](https://androidweekly.net/issues/issue-694/badge)](https://androidweekly.net/issues/issue-694)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.0+-purple.svg)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/Compose-BOM%202025.08.01+-blue.svg)](https://developer.android.com/jetpack/compose)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20+-purple.svg)](https://kotlinlang.org)
+[![Compose](https://img.shields.io/badge/Compose-BOM%202026.03.01+-blue.svg)](https://developer.android.com/jetpack/compose)
 [![Android](https://img.shields.io/badge/Android-API%2024+-green.svg)](https://android-arsenal.com/api?level=24)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.0.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.0.0)
+[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.1.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.1.0)
 
 A lightweight Android library that bridges the gap between ActivityResultContracts permission API and Kotlin Coroutines, enabling developers to request permissions using clean, sequential suspend functions in both traditional Android components (Activities/Fragments) and Jetpack Compose applications.
 
@@ -26,10 +26,10 @@ Add the dependencies to your `build.gradle.kts` file:
 ```kotlin
 dependencies {
     // Non-Compose apps: include only this line
-    implementation("io.github.ivamsi:easyandroidpermissions-core:2.0.0")
+    implementation("io.github.ivamsi:easyandroidpermissions-core:2.1.0")
 
     // Compose apps: include this line (it already pulls in -core transitively)
-    implementation("io.github.ivamsi:easyandroidpermissions-compose:2.0.0")
+    implementation("io.github.ivamsi:easyandroidpermissions-compose:2.1.0")
 }
 ```
 
@@ -347,8 +347,8 @@ scope.launch {
 ## Requirements 📋
 
 - **Minimum SDK**: API 24 (Android 7.0)
-- **Kotlin**: 2.0.0 or higher
-- **Jetpack Compose**: BOM 2025.08.01 or higher
+- **Kotlin**: 2.3.20 or higher (AGP 9 built-in Kotlin)
+- **Jetpack Compose**: BOM 2026.03.01 or higher
 - **Coroutines**: 1.7.0 or higher
 
 ## Sample App 📱

@@ -1,4 +1,6 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SourcesJar
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.kotlin.dsl.configure
@@ -6,8 +8,7 @@ import org.gradle.kotlin.dsl.withType
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    id("com.vanniktech.maven.publish") version "0.34.0"
+    alias(libs.plugins.vanniktech.maven.publish)
 }
 
 android {
@@ -66,7 +67,7 @@ mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
 
-    coordinates("io.github.ivamsi", "easyandroidpermissions-core", "2.0.0")
+    coordinates("io.github.ivamsi", "easyandroidpermissions-core", "2.1.0")
 
     pom {
         name.set("EasyAndroidPermissions Core")
@@ -99,10 +100,9 @@ mavenPublishing {
 
     configure(AndroidSingleVariantLibrary(
         variant = "release",
-        sourcesJar = true,
-        // AGP’s javaDocReleaseGeneration bundles Dokka with ASM too old for sealed JVM 17+
-        // types (e.g. PermissionResult) when target is JVM 21 — see publish-javadoc/README.txt.
-        publishJavadocJar = false
+        sourcesJar = SourcesJar.Sources(),
+        // Dokka/Javadoc from AGP is skipped; stub javadoc is attached below — see publish-javadoc/README.txt.
+        javadocJar = JavadocJar.None(),
     ))
 }
 

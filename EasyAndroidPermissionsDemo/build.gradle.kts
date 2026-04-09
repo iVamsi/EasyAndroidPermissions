@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -54,7 +53,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":easyandroidpermissions-compose"))
+    // Published artifacts from mavenLocal() / Maven Central (not :project). Run publishToMavenLocal first.
+    implementation("io.github.ivamsi:easyandroidpermissions-compose:2.1.0")
     
     // SnapNotify for elegant snackbars
     implementation(libs.snapnotify)

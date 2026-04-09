@@ -14,6 +14,8 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        // Resolve io.github.ivamsi artifacts from ~/.m2 first when present (demo mavenLocal testing).
+        mavenLocal()
         google()
         mavenCentral()
     }
