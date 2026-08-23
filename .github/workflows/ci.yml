@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -27,13 +27,13 @@ jobs:
       # The demo depends on the published coordinates rather than the projects,
       # and mavenLocal() is first in dependencyResolutionManagement. Without this
       # the demo would compile against the last release instead of this checkout.
-      # Signing is skipped because the workflow holds no GPG key.
+      # Signing is off because the workflow holds no GPG key.
       - name: Publish libraries to mavenLocal
         run: >
           ./gradlew
           :easyandroidpermissions-core:publishToMavenLocal
           :easyandroidpermissions-compose:publishToMavenLocal
-          -x signMavenPublication
+          -PenableSigning=false
           --stacktrace
 
       - name: Check

@@ -63,9 +63,16 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
+// CI publishes to mavenLocal without a GPG key. On by default so a release
+// is never published unsigned by accident.
+val signingEnabled = providers.gradleProperty("enableSigning").getOrElse("true").toBoolean()
+
 mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
-    signAllPublications()
+
+    if (signingEnabled) {
+        signAllPublications()
+    }
 
     coordinates("io.github.ivamsi", "easyandroidpermissions-core", libs.versions.easyandroidpermissions.get())
 
