@@ -53,8 +53,8 @@ android {
 }
 
 dependencies {
-    // Published artifacts from mavenLocal() / Maven Central (not :project). Run publishToMavenLocal first.
-    implementation("io.github.ivamsi:easyandroidpermissions-compose:2.1.0")
+    // Published artifact from mavenLocal() / Maven Central (not :project). Run publishToMavenLocal first.
+    implementation(libs.easyandroidpermissions.compose)
     
     // SnapNotify for elegant snackbars
     implementation(libs.snapnotify)

@@ -62,7 +62,7 @@ mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
 
-    coordinates("io.github.ivamsi", "easyandroidpermissions-compose", "2.1.0")
+    coordinates("io.github.ivamsi", "easyandroidpermissions-compose", libs.versions.easyandroidpermissions.get())
 
     pom {
         name.set("EasyAndroidPermissions Compose")
