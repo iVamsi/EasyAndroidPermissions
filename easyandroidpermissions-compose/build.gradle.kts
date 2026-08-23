@@ -58,11 +58,18 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 }
 
+// CI publishes to mavenLocal without a GPG key. On by default so a release
+// is never published unsigned by accident.
+val signingEnabled = providers.gradleProperty("enableSigning").getOrElse("true").toBoolean()
+
 mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
-    signAllPublications()
 
-    coordinates("io.github.ivamsi", "easyandroidpermissions-compose", "2.1.0")
+    if (signingEnabled) {
+        signAllPublications()
+    }
+
+    coordinates("io.github.ivamsi", "easyandroidpermissions-compose", libs.versions.easyandroidpermissions.get())
 
     pom {
         name.set("EasyAndroidPermissions Compose")

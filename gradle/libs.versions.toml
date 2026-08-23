@@ -1,4 +1,6 @@
 [versions]
+# Published version of this library. Both modules and the demo read it from here.
+easyandroidpermissions = "2.1.0"
 agp = "9.1.0"
 appcompat = "1.7.1"
 fragmentKtx = "1.8.9"
@@ -46,6 +48,7 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 snapnotify = { module = "io.github.ivamsi:snapnotify", version.ref = "snapnotify" }
+easyandroidpermissions-compose = { module = "io.github.ivamsi:easyandroidpermissions-compose", version.ref = "easyandroidpermissions" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
 
