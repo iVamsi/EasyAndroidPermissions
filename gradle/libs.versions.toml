@@ -2,7 +2,7 @@
 # Published version of this library. Both modules and the demo read it from here.
 easyandroidpermissions = "2.1.0"
 agp = "9.1.0"
-appcompat = "1.7.1"
+appcompat = "1.8.0"
 fragmentKtx = "1.8.9"
 kotlin = "2.3.20"
 coreKtx = "1.18.0"
