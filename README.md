@@ -5,7 +5,7 @@
 [![Compose](https://img.shields.io/badge/Compose-BOM%202026.03.01+-blue.svg)](https://developer.android.com/jetpack/compose)
 [![Android](https://img.shields.io/badge/Android-API%2024+-green.svg)](https://android-arsenal.com/api?level=24)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.1.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.1.0)
+[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.2.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.2.0)
 
 A lightweight Android library that bridges the gap between ActivityResultContracts permission API and Kotlin Coroutines, enabling developers to request permissions using clean, sequential suspend functions in both traditional Android components (Activities/Fragments) and Jetpack Compose applications.
 
@@ -26,10 +26,10 @@ Add the dependencies to your `build.gradle.kts` file:
 ```kotlin
 dependencies {
     // Non-Compose apps: include only this line
-    implementation("io.github.ivamsi:easyandroidpermissions-core:2.1.0")
+    implementation("io.github.ivamsi:easyandroidpermissions-core:2.2.0")
 
     // Compose apps: include this line (it already pulls in -core transitively)
-    implementation("io.github.ivamsi:easyandroidpermissions-compose:2.1.0")
+    implementation("io.github.ivamsi:easyandroidpermissions-compose:2.2.0")
 }
 ```
 
@@ -186,6 +186,25 @@ val trackedStates by permissionManager.permissionStates.collectAsState()
 
 `permissionStates` is a cold `StateFlow` that emits whenever EasyAndroidPermissions learns about a new permission state (e.g., after a request or an explicit `getPermissionState()` call). It plugs directly into Compose via `collectAsState()` or into View-based UIs via `lifecycleScope.launch { permissionStates.collect { … } }`.
 
+Every permission in `permissionStates` is checked again when the host resumes. If the user grants a permission in Settings and comes back, your UI updates without another request.
+
+### Photos and videos (Android 14 partial access)
+
+On Android 14 and later, the user can allow access to only the photos they pick. `request(READ_MEDIA_IMAGES)` reports that as `Denied`, so use `requestMedia()` instead. It picks the right permissions for each Android version.
+
+```kotlin
+when (val access = permissionManager.requestMedia(includeVideo = true)) {
+    MediaAccess.Full -> showGallery()
+    MediaAccess.Partial -> showPickedItems() // Call requestMedia() again to let the user pick more
+    is MediaAccess.Denied -> if (!access.canRequestAgain) showSettingsPrompt()
+}
+
+// Without showing a dialog
+val current = permissionManager.getMediaAccess()
+```
+
+To get `MediaAccess.Partial`, declare `READ_MEDIA_VISUAL_USER_SELECTED` in your manifest next to `READ_MEDIA_IMAGES` (and `READ_MEDIA_VIDEO` if you use video).
+
 ## API Reference 📚
 
 ### PermissionManager Interface
@@ -222,6 +241,22 @@ sealed interface PermissionResult {
 }
 ```
 
+### MediaAccess
+
+```kotlin
+sealed interface MediaAccess {
+    data object Full : MediaAccess
+    data object Partial : MediaAccess
+    data class Denied(
+        val canRequestAgain: Boolean,
+        val shouldShowRationale: Boolean
+    ) : MediaAccess
+}
+
+suspend fun PermissionManager.requestMedia(includeVideo: Boolean = true): MediaAccess
+fun PermissionManager.getMediaAccess(includeVideo: Boolean = true): MediaAccess
+```
+
 ### Factory Methods
 
 ```kotlin
@@ -245,7 +280,8 @@ PermissionManagerFactory.create(
 ```kotlin
 /**
  * Creates and remembers a PermissionManager instance.
- * Must be called within a Composable context.
+ * Must be called within a Composable context. When it leaves the composition,
+ * pending requests are cancelled and later requests throw IllegalStateException.
  */
 @Composable
 fun rememberPermissionManager(): PermissionManager

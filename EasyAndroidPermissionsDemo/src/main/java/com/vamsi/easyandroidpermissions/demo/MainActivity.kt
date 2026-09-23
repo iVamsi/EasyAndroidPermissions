@@ -47,7 +47,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import com.vamsi.easyandroidpermissions.MediaAccess
 import com.vamsi.easyandroidpermissions.PermissionResult
+import com.vamsi.easyandroidpermissions.getMediaAccess
+import com.vamsi.easyandroidpermissions.requestMedia
 import com.vamsi.easyandroidpermissions.isGranted
 import com.vamsi.easyandroidpermissions.demo.ui.theme.EasyAndroidPermissionsDemoTheme
 import com.vamsi.easyandroidpermissions.rememberPermissionManager
@@ -79,6 +82,11 @@ fun PermissionDemoScreen(modifier: Modifier = Modifier) {
     var showSettingsDialog by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val trackedStates by permissionManager.permissionStates.collectAsState()
+    var mediaAccess by remember { mutableStateOf<MediaAccess?>(null) }
+    // Tracked states refresh on resume, so this also picks up changes made in Settings.
+    LaunchedEffect(trackedStates) {
+        mediaAccess = permissionManager.getMediaAccess()
+    }
     val commonPermissions = remember {
         buildList {
             add(Manifest.permission.CAMERA to "Camera")
@@ -256,6 +264,45 @@ fun PermissionDemoScreen(modifier: Modifier = Modifier) {
                     }
                 }
             )
+        }
+
+        HorizontalDivider()
+
+        Text(
+            text = "Photos & Videos",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "On Android 14+, choose \"Select photos and videos\" to see partial access. " +
+                "Change it in Settings and come back: the status updates on resume.",
+            style = MaterialTheme.typography.bodySmall
+        )
+        Text(
+            text = "Status: " + when (val access = mediaAccess) {
+                MediaAccess.Full -> "Full access"
+                MediaAccess.Partial -> "Partial access (picked items only)"
+                is MediaAccess.Denied -> if (access.canRequestAgain) "Denied" else "Denied permanently"
+                null -> "Unknown"
+            },
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Button(
+            onClick = {
+                scope.launch {
+                    when (val access = permissionManager.requestMedia()) {
+                        MediaAccess.Full -> SnapNotify.showSuccess("✅ Full photo and video access")
+                        MediaAccess.Partial -> SnapNotify.showInfo("ℹ️ Partial access. Tap again to pick more items.")
+                        is MediaAccess.Denied -> if (access.canRequestAgain) {
+                            SnapNotify.showError("❌ Photo and video access denied")
+                        } else {
+                            showSettingsDialog = "Photos & Videos"
+                        }
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (mediaAccess == MediaAccess.Partial) "Pick More Photos & Videos" else "Request Photos & Videos")
         }
         }
     }

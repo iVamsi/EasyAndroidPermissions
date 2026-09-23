@@ -1,6 +1,7 @@
 package com.vamsi.easyandroidpermissions.internal
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
@@ -29,6 +30,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * - Serialize concurrent permission requests via [Mutex] so Android's contract is respected.
  * - Emit observable permission states through [permissionStates] and remember previously denied
  *   permissions to better infer `canRequestAgain`.
+ * - Re-check tracked permissions on `ON_RESUME`, so changes made in Settings show up.
  * - Automatically tears down on `Lifecycle.Event.ON_DESTROY` to avoid leaking launchers/request state.
  */
 internal class LifecyclePermissionManager(
@@ -159,10 +161,11 @@ internal class LifecyclePermissionManager(
 
         val granted = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
         if (granted) {
+            setDenied(permission, false)
             return PermissionResult.Granted
         }
 
-        val wasDeniedBefore = deniedPermissions.contains(permission)
+        val wasDeniedBefore = wasDenied(permission)
         val shouldShow = host.shouldShowRationale(permission)
         val canRequestAgain = shouldShow || !wasDeniedBefore
 
@@ -170,6 +173,21 @@ internal class LifecyclePermissionManager(
             canRequestAgain = canRequestAgain,
             shouldShowRationale = shouldShow
         )
+    }
+
+    // Denials are also saved to disk: a new manager after rotation or process death would otherwise
+    // report a permanently denied permission as requestable.
+    private fun deniedStore(): SharedPreferences? =
+        host.contextProvider()?.applicationContext?.getSharedPreferences(DENIED_PREFS, Context.MODE_PRIVATE)
+
+    private fun wasDenied(permission: String): Boolean =
+        permission in deniedPermissions || deniedStore()?.getBoolean(permission, false) == true
+
+    private fun setDenied(permission: String, denied: Boolean) {
+        if (denied) deniedPermissions.add(permission) else deniedPermissions.remove(permission)
+        val editor = deniedStore()?.edit() ?: return
+        if (denied) editor.putBoolean(permission, true) else editor.remove(permission)
+        editor.apply()
     }
 
     private fun cacheState(permission: String, result: PermissionResult) {
@@ -222,8 +240,12 @@ internal class LifecyclePermissionManager(
         val request = currentMultipleRequest
         currentMultipleRequest = null
 
-        val mapped = results.mapValues { (permission, granted) ->
-            buildResult(permission, granted)
+        // An interrupted dialog returns an empty map. A permission the user never answered
+        // reports its current state instead of counting as a denial.
+        val permissions = request?.permissions ?: results.keys.toList()
+        val mapped = permissions.associateWith { permission ->
+            val granted = results[permission]
+            if (granted == null) computeCurrentState(permission) else buildResult(permission, granted)
         }
 
         cacheStates(mapped)
@@ -232,13 +254,13 @@ internal class LifecyclePermissionManager(
 
     private fun buildResult(permission: String, granted: Boolean): PermissionResult {
         if (granted) {
-            deniedPermissions.remove(permission)
+            setDenied(permission, false)
             return PermissionResult.Granted
         }
 
         val shouldShow = host.shouldShowRationale(permission)
-        val wasDeniedBefore = deniedPermissions.contains(permission)
-        deniedPermissions.add(permission)
+        val wasDeniedBefore = wasDenied(permission)
+        setDenied(permission, true)
 
         return PermissionResult.Denied(
             canRequestAgain = shouldShow || !wasDeniedBefore,
@@ -247,13 +269,17 @@ internal class LifecyclePermissionManager(
     }
 
     override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-        if (event == Lifecycle.Event.ON_DESTROY) {
-            cleanup()
+        when (event) {
+            Lifecycle.Event.ON_RESUME -> getPermissionStates(_permissionStates.value.keys.toList())
+            Lifecycle.Event.ON_DESTROY -> cleanup()
+            else -> Unit
         }
     }
 
     private fun cleanup() {
         host.lifecycleOwner.lifecycle.removeObserver(this)
+        singlePermissionLauncher.unregister()
+        multiplePermissionLauncher.unregister()
 
         currentSingleRequest?.deferred?.cancel()
         currentMultipleRequest?.deferred?.cancel()
@@ -267,6 +293,8 @@ internal class LifecyclePermissionManager(
         currentMultipleRequest = null
     }
 }
+
+private const val DENIED_PREFS = "com.vamsi.easyandroidpermissions.denied"
 
 /**
  * Lightweight holder describing the environment the permission manager runs inside.

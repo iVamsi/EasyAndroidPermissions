@@ -14,6 +14,10 @@ internal class TestLifecycleOwner : LifecycleOwner {
     override val lifecycle: Lifecycle
         get() = registry
 
+    fun handleResume() {
+        registry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    }
+
     fun handleDestroy() {
         registry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     }
