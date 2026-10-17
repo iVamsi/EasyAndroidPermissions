@@ -158,14 +158,12 @@ Factory entry points include `ComponentActivity.createPermissionManager()`, `Fra
 
 ## Requirements and compatibility
 
-The previously documented requirements are retained pending a tested consumer compatibility matrix:
-
 - Minimum Android SDK: API 24.
 - Kotlin: 2.3.20 or higher; repository uses AGP 9 built-in Kotlin.
 - Compose: BOM 2026.03.01 or higher for Compose integration.
 - Coroutines: 1.7.0 or higher.
 
-The core artifact does not require the Compose artifact. These version statements are not a claim that every combination has been tested. Validate the published dependency in your app before rollout; do not infer support for older toolchains from this documentation update.
+The core artifact does not require the Compose artifact. Compatibility has not been verified across every toolchain combination or with older toolchains. Validate the published dependency in your app before rollout.
 
 ## Try the sample
 
