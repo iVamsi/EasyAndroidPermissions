@@ -18,7 +18,7 @@ mockk = "1.14.11"
 snapnotify = "1.0.6"
 material = "1.13.0"
 cardview = "1.0.0"
-robolectric = "4.16.1"
+robolectric = "4.17"
 annotation = "1.10.0"
 mavenPublish = "0.36.0"
 
