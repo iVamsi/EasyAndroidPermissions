@@ -1,7 +1,7 @@
 # EasyAndroidPermissions
 
 [![Android Weekly](https://androidweekly.net/issues/issue-694/badge)](https://androidweekly.net/issues/issue-694)
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.3.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.3.0)
+[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.3.1-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.3.1)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
 
 Request Android runtime permissions with Kotlin suspend functions instead of managing result callbacks. Use the same PermissionManager API in Jetpack Compose, Activities, and Fragments.
@@ -12,12 +12,12 @@ Make `google()` and `mavenCentral()` available in your dependency repositories. 
 
 ```kotlin
 // Compose apps: includes the core API transitively.
-implementation("io.github.ivamsi:easyandroidpermissions-compose:2.3.0")
+implementation("io.github.ivamsi:easyandroidpermissions-compose:2.3.1")
 ```
 
 ```kotlin
 // View/XML apps: no Compose artifact required.
-implementation("io.github.ivamsi:easyandroidpermissions-core:2.3.0")
+implementation("io.github.ivamsi:easyandroidpermissions-core:2.3.1")
 ```
 
 Add the selected line inside your application module's `dependencies` block. Upgrading from 1.x? Read [MIGRATION.md](MIGRATION.md).

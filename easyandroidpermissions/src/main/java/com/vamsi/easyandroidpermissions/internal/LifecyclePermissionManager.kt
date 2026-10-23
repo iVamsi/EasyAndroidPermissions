@@ -1,9 +1,12 @@
 package com.vamsi.easyandroidpermissions.internal
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -190,12 +193,35 @@ internal class LifecyclePermissionManager(
             currentSpecialRequest = SpecialPermissionRequest(permission, deferred)
 
             try {
-                specialPermissionLauncher.launch(permission.createIntent(context))
+                if (!launchSpecialIntent(context, permission)) {
+                    return@withLock isSpecialPermissionGranted(permission)
+                }
                 deferred.await()
-            } catch (cancellation: CancellationException) {
-                currentSpecialRequest = null
-                throw cancellation
+            } finally {
+                if (currentSpecialRequest?.deferred === deferred) {
+                    currentSpecialRequest = null
+                }
             }
+        }
+    }
+
+    private fun launchSpecialIntent(context: Context, permission: SpecialPermission): Boolean {
+        try {
+            specialPermissionLauncher.launch(permission.createIntent(context))
+            return true
+        } catch (_: ActivityNotFoundException) {
+            // Some devices (Android TV, Wear OS, Go builds, or custom OEM ROMs) omit dedicated
+            // Settings screens for certain special permissions. Fall back to app details.
+        }
+
+        val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+        return try {
+            specialPermissionLauncher.launch(fallbackIntent)
+            true
+        } catch (_: ActivityNotFoundException) {
+            false
         }
     }
 

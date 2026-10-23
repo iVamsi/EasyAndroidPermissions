@@ -62,8 +62,8 @@ public object PermissionPresets {
         }
 
     /**
-     * Returns the local network runtime permission (`android.permission.ACCESS_LOCAL_NETWORK`)
-     * introduced in Android 16 (API 36).
+     * Returns the single local network runtime permission (`android.permission.ACCESS_LOCAL_NETWORK`)
+     * introduced in Android 16 (API 36), for use with [PermissionManager.request].
      */
     public fun localNetwork(): String = ACCESS_LOCAL_NETWORK
 

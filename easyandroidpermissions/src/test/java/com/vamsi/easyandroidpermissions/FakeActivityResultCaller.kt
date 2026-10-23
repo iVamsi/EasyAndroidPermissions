@@ -21,6 +21,7 @@ internal class FakeActivityResultCaller : ActivityResultCaller {
         private set
     var lastLaunchedIntent: Intent? = null
         private set
+    val unsupportedIntentActions = mutableSetOf<String>()
 
     override fun <I, O> registerForActivityResult(
         contract: ActivityResultContract<I, O>,
@@ -98,6 +99,9 @@ internal class FakeActivityResultCaller : ActivityResultCaller {
     ) : ActivityResultLauncher<Intent>() {
 
         override fun launch(input: Intent, options: ActivityOptionsCompat?) {
+            if (input.action in unsupportedIntentActions) {
+                throw android.content.ActivityNotFoundException("No Activity found to handle ${input.action}")
+            }
             lastLaunchedIntent = input
             activityResultCallback = { result -> callback.onActivityResult(result) }
         }

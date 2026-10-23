@@ -19,28 +19,48 @@ import com.vamsi.easyandroidpermissions.internal.LifecyclePermissionManager
  * screens rather than standard runtime permission dialogs.
  */
 public enum class SpecialPermission {
-    /** `SCHEDULE_EXACT_ALARM` via [Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM] (Android 12+). */
+    /**
+     * `SCHEDULE_EXACT_ALARM` via [Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM] (Android 12+).
+     * Declare `<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />` in your manifest.
+     */
     ExactAlarm,
 
-    /** `SYSTEM_ALERT_WINDOW` via [Settings.ACTION_MANAGE_OVERLAY_PERMISSION]. */
+    /**
+     * `SYSTEM_ALERT_WINDOW` via [Settings.ACTION_MANAGE_OVERLAY_PERMISSION].
+     * Declare `<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />` in your manifest.
+     */
     SystemAlertWindow,
 
-    /** `MANAGE_EXTERNAL_STORAGE` via [Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION] (Android 11+). */
+    /**
+     * `MANAGE_EXTERNAL_STORAGE` via [Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION] (Android 11+).
+     * Declare `<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />` in your manifest.
+     * Note: Google Play restricts usage of this permission to approved core use cases (such as file managers).
+     */
     ManageExternalStorage,
 
-    /** `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` via [Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS]. */
+    /**
+     * `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` via [Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS].
+     * Declare `<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />`
+     * in your manifest. Note: Google Play restricts usage of this permission to approved core use cases.
+     */
     IgnoreBatteryOptimization,
 
     /** `BIND_NOTIFICATION_LISTENER_SERVICE` via [Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS]. */
     NotificationListener,
 
-    /** `REQUEST_INSTALL_PACKAGES` via [Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES] (Android 8+). */
+    /**
+     * `REQUEST_INSTALL_PACKAGES` via [Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES] (Android 8+).
+     * Declare `<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />` in your manifest.
+     */
     InstallUnknownApps,
 }
 
 /**
  * Requests a [SpecialPermission] by launching its dedicated system Settings screen when not already
  * granted, suspending until the user returns, and returning the updated grant state.
+ *
+ * On devices that omit the dedicated Settings screen (such as Android TV, Wear OS, or certain OEM builds),
+ * this falls back to the app details Settings page, or returns `false` if no Settings screen is available.
  */
 @androidx.annotation.MainThread
 @androidx.annotation.CheckResult

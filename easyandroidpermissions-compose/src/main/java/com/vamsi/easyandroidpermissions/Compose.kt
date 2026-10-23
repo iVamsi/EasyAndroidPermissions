@@ -59,6 +59,10 @@ public fun rememberPermissionManager(): PermissionManager {
  *
  * Read [status] or [isGranted] during composition to recompose automatically when the
  * permission is granted or denied, or when the user returns from system Settings.
+ *
+ * Note for callers migrating from Accompanist Permissions: [status] returns EasyAndroidPermissions'
+ * [PermissionResult] (`Granted` or `Denied(canRequestAgain, shouldShowRationale)`) rather than
+ * Accompanist's `PermissionStatus`.
  */
 @Stable
 public interface PermissionState {

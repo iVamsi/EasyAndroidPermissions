@@ -146,4 +146,50 @@ class SpecialPermissionTest {
             context.createSpecialPermissionIntent(SpecialPermission.InstallUnknownApps).action,
         )
     }
+
+    @Test
+    fun `requestSpecialPermission falls back to app details when dedicated settings screen is missing`() = runTest {
+        ShadowSettings.setCanDrawOverlays(false)
+        caller.unsupportedIntentActions.add(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+
+        val deferred = async(start = CoroutineStart.UNDISPATCHED) {
+            manager.requestSpecialPermission(SpecialPermission.SystemAlertWindow)
+        }
+
+        assertEquals(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            caller.lastLaunchedIntent?.action,
+        )
+        assertEquals(
+            "package:${context.packageName}",
+            caller.lastLaunchedIntent?.dataString,
+        )
+
+        ShadowSettings.setCanDrawOverlays(true)
+        caller.dispatchActivityResult()
+
+        assertTrue(deferred.await())
+    }
+
+    @Test
+    fun `requestSpecialPermission returns false without crashing when no settings activity exists`() = runTest {
+        ShadowSettings.setCanDrawOverlays(false)
+        caller.unsupportedIntentActions.add(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+        caller.unsupportedIntentActions.add(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+
+        val granted = manager.requestSpecialPermission(SpecialPermission.SystemAlertWindow)
+
+        assertFalse(granted)
+        assertNull(caller.lastLaunchedIntent)
+
+        // Verify subsequent requests are not stuck after ActivityNotFoundException
+        caller.unsupportedIntentActions.clear()
+        val nextDeferred = async(start = CoroutineStart.UNDISPATCHED) {
+            manager.requestSpecialPermission(SpecialPermission.SystemAlertWindow)
+        }
+        assertEquals(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, caller.lastLaunchedIntent?.action)
+        ShadowSettings.setCanDrawOverlays(true)
+        caller.dispatchActivityResult()
+        assertTrue(nextDeferred.await())
+    }
 }
