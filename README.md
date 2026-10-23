@@ -1,7 +1,7 @@
 # EasyAndroidPermissions
 
 [![Android Weekly](https://androidweekly.net/issues/issue-694/badge)](https://androidweekly.net/issues/issue-694)
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.2.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.2.0)
+[![Maven Central](https://img.shields.io/badge/Maven%20Central-2.3.0-red.svg)](https://central.sonatype.com/artifact/io.github.ivamsi/easyandroidpermissions-core/2.3.0)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
 
 Request Android runtime permissions with Kotlin suspend functions instead of managing result callbacks. Use the same PermissionManager API in Jetpack Compose, Activities, and Fragments.
@@ -12,12 +12,12 @@ Make `google()` and `mavenCentral()` available in your dependency repositories. 
 
 ```kotlin
 // Compose apps: includes the core API transitively.
-implementation("io.github.ivamsi:easyandroidpermissions-compose:2.2.0")
+implementation("io.github.ivamsi:easyandroidpermissions-compose:2.3.0")
 ```
 
 ```kotlin
 // View/XML apps: no Compose artifact required.
-implementation("io.github.ivamsi:easyandroidpermissions-core:2.2.0")
+implementation("io.github.ivamsi:easyandroidpermissions-core:2.3.0")
 ```
 
 Add the selected line inside your application module's `dependencies` block. Upgrading from 1.x? Read [MIGRATION.md](MIGRATION.md).
@@ -131,6 +131,68 @@ val currentAccess = manager.getMediaAccess()
 ```
 
 For partial access on Android 14+, declare READ_MEDIA_VISUAL_USER_SELECTED alongside READ_MEDIA_IMAGES, and READ_MEDIA_VIDEO if needed. Review the sample manifest for version-specific declarations. A plain `request(READ_MEDIA_IMAGES)` does not distinguish partial access as a grant.
+
+## Declarative Compose (`rememberPermissionState` & `PermissionRequired`)
+
+For state-driven Compose UIs (including apps migrating from Accompanist Permissions), use `rememberPermissionState()` or `PermissionRequired()`:
+
+```kotlin
+@Composable
+fun CameraFeatureScreen() {
+    val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
+
+    if (cameraPermission.isGranted) {
+        CameraPreview()
+    } else {
+        Button(onClick = { cameraPermission.launchPermissionRequest() }) {
+            Text("Grant Camera Permission")
+        }
+    }
+}
+
+@Composable
+fun DeclarativeCameraSection() {
+    PermissionRequired(
+        permission = Manifest.permission.CAMERA,
+        onGranted = { CameraPreview() },
+        onRationale = { shouldShowRationale, onRequest ->
+            Column {
+                if (shouldShowRationale) {
+                    Text("Camera access is needed to scan QR codes.")
+                }
+                Button(onClick = onRequest) { Text("Allow Camera") }
+            }
+        },
+        onDenied = { _, onOpenSettings ->
+            Button(onClick = onOpenSettings) { Text("Enable Camera in Settings") }
+        }
+    )
+}
+```
+
+## Special permissions & App Ops
+
+Permissions granted on a dedicated system Settings screen (such as exact alarms, overlay windows, or all-files access) can be checked and requested with `SpecialPermission`:
+
+```kotlin
+val canDrawOverlays = manager.isSpecialPermissionGranted(
+    SpecialPermission.SystemAlertWindow
+)
+
+val granted = manager.requestSpecialPermission(
+    SpecialPermission.ExactAlarm
+)
+```
+
+## Version-aware permission presets
+
+Use `PermissionPresets` to request version-appropriate permission bundles without writing SDK version checks:
+
+```kotlin
+val nearbyResults = manager.requestMultiple(PermissionPresets.nearbyDevices())
+val locationResults = manager.requestMultiple(PermissionPresets.location(precise = true))
+val avResults = manager.requestMultiple(PermissionPresets.cameraAndMicrophone())
+```
 
 ## Core API
 

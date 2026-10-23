@@ -1,6 +1,7 @@
 package com.vamsi.easyandroidpermissions.internal
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import androidx.activity.result.ActivityResultCaller
@@ -12,6 +13,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import com.vamsi.easyandroidpermissions.PermissionManager
 import com.vamsi.easyandroidpermissions.PermissionResult
+import com.vamsi.easyandroidpermissions.SpecialPermission
+import com.vamsi.easyandroidpermissions.createIntent
 import com.vamsi.easyandroidpermissions.isGranted
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,9 +46,11 @@ internal class LifecyclePermissionManager(
 
     private var currentSingleRequest: PermissionRequest? = null
     private var currentMultipleRequest: MultiplePermissionRequest? = null
+    private var currentSpecialRequest: SpecialPermissionRequest? = null
 
     private lateinit var singlePermissionLauncher: ActivityResultLauncher<String>
     private lateinit var multiplePermissionLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var specialPermissionLauncher: ActivityResultLauncher<Intent>
 
     private val _permissionStates = MutableStateFlow<Map<String, PermissionResult>>(emptyMap())
 
@@ -67,6 +72,12 @@ internal class LifecyclePermissionManager(
             ActivityResultContracts.RequestMultiplePermissions()
         ) { results ->
             onMultiplePermissionResult(results)
+        }
+
+        specialPermissionLauncher = host.activityResultCaller.registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) {
+            onSpecialPermissionResult()
         }
     }
 
@@ -155,6 +166,39 @@ internal class LifecyclePermissionManager(
         }
     }
 
+    internal fun isSpecialPermissionGranted(permission: SpecialPermission): Boolean {
+        val context = host.contextProvider() ?: return false
+        return permission.isGranted(context)
+    }
+
+    internal suspend fun requestSpecial(permission: SpecialPermission): Boolean {
+        if (isSpecialPermissionGranted(permission)) {
+            return true
+        }
+
+        ensureHostReady()
+
+        return requestMutex.withLock {
+            if (isSpecialPermissionGranted(permission)) {
+                return@withLock true
+            }
+
+            val context = host.contextProvider()
+                ?: throw IllegalStateException("Permission host context is null. Ensure the host is attached before requesting permissions.")
+
+            val deferred = CompletableDeferred<Boolean>()
+            currentSpecialRequest = SpecialPermissionRequest(permission, deferred)
+
+            try {
+                specialPermissionLauncher.launch(permission.createIntent(context))
+                deferred.await()
+            } catch (cancellation: CancellationException) {
+                currentSpecialRequest = null
+                throw cancellation
+            }
+        }
+    }
+
     private fun computeCurrentState(permission: String): PermissionResult {
         val context = host.contextProvider()
             ?: return PermissionResult.Denied(canRequestAgain = false, shouldShowRationale = false)
@@ -204,7 +248,11 @@ internal class LifecyclePermissionManager(
     }
 
     private fun ensureHostReady() {
-        if (!this::singlePermissionLauncher.isInitialized || !this::multiplePermissionLauncher.isInitialized) {
+        if (
+            !this::singlePermissionLauncher.isInitialized ||
+            !this::multiplePermissionLauncher.isInitialized ||
+            !this::specialPermissionLauncher.isInitialized
+        ) {
             throw IllegalStateException("Permission manager launchers are not initialized. Is the LifecycleOwner already destroyed?")
         }
 
@@ -215,6 +263,12 @@ internal class LifecyclePermissionManager(
         if (host.contextProvider() == null) {
             throw IllegalStateException("Permission host context is null. Ensure the host is attached before requesting permissions.")
         }
+    }
+
+    private fun onSpecialPermissionResult() {
+        val request = currentSpecialRequest ?: return
+        currentSpecialRequest = null
+        request.deferred.complete(isSpecialPermissionGranted(request.permission))
     }
 
     private fun onSinglePermissionResult(isGranted: Boolean) {
@@ -280,9 +334,11 @@ internal class LifecyclePermissionManager(
         host.lifecycleOwner.lifecycle.removeObserver(this)
         singlePermissionLauncher.unregister()
         multiplePermissionLauncher.unregister()
+        specialPermissionLauncher.unregister()
 
         currentSingleRequest?.deferred?.cancel()
         currentMultipleRequest?.deferred?.cancel()
+        currentSpecialRequest?.deferred?.cancel()
 
         pendingSingleRequests.values.forEach { list ->
             list.forEach { it.cancel() }
@@ -291,6 +347,7 @@ internal class LifecyclePermissionManager(
 
         currentSingleRequest = null
         currentMultipleRequest = null
+        currentSpecialRequest = null
     }
 }
 

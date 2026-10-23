@@ -8,8 +8,11 @@ import androidx.activity.result.ActivityResultRegistry
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.RememberObserver
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
@@ -20,6 +23,7 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.vamsi.easyandroidpermissions.internal.findComponentActivity
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 /**
  * Creates and remembers a [PermissionManager] implementation that works inside Jetpack Compose.
@@ -47,6 +51,97 @@ public fun rememberPermissionManager(): PermissionManager {
                 activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
             },
         )
+    }
+}
+
+/**
+ * State holder for a single runtime [permission] in Jetpack Compose.
+ *
+ * Read [status] or [isGranted] during composition to recompose automatically when the
+ * permission is granted or denied, or when the user returns from system Settings.
+ */
+@Stable
+public interface PermissionState {
+    /** The Android permission string being tracked (e.g. `Manifest.permission.CAMERA`). */
+    public val permission: String
+
+    /** Current [PermissionResult] for [permission]. */
+    public val status: PermissionResult
+
+    /** True when [status] is [PermissionResult.Granted]. */
+    public val isGranted: Boolean
+        get() = status.isGranted
+
+    /** Launches the system permission dialog for [permission]. */
+    public fun launchPermissionRequest()
+}
+
+/**
+ * Creates and remembers a reactive [PermissionState] for [permission], backed by the
+ * shared [PermissionManager] engine.
+ *
+ * The state automatically refreshes on `ON_RESUME` (for example, after returning from
+ * the system Settings screen).
+ */
+@Composable
+public fun rememberPermissionState(
+    permission: String,
+    onPermissionResult: (PermissionResult) -> Unit = {},
+): PermissionState {
+    val manager = rememberPermissionManager()
+    val scope = rememberCoroutineScope()
+    val currentOnResult by rememberUpdatedState(onPermissionResult)
+    val initialStatus = remember(manager, permission) {
+        manager.getPermissionState(permission)
+    }
+    val trackedStates = manager.permissionStates.collectAsState()
+
+    return remember(manager, permission, scope) {
+        object : PermissionState {
+            override val permission: String = permission
+
+            override val status: PermissionResult
+                get() = trackedStates.value[permission] ?: initialStatus
+
+            override fun launchPermissionRequest() {
+                scope.launch {
+                    val result = manager.request(permission)
+                    currentOnResult(result)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Declarative wrapper that renders [onGranted] when [permission] is granted, [onRationale]
+ * while the system permission dialog can still be requested, and [onDenied] once the
+ * permission has been permanently denied (`canRequestAgain == false`).
+ */
+@Composable
+public fun PermissionRequired(
+    permission: String,
+    onGranted: @Composable () -> Unit,
+    onRationale: @Composable (shouldShowRationale: Boolean, onRequest: () -> Unit) -> Unit,
+    onDenied: @Composable (canRequestAgain: Boolean, onOpenSettings: () -> Unit) -> Unit,
+) {
+    val context = LocalContext.current
+    val currentContext by rememberUpdatedState(context)
+    val state = rememberPermissionState(permission)
+
+    when (val currentStatus = state.status) {
+        PermissionResult.Granted -> onGranted()
+        is PermissionResult.Denied -> {
+            if (currentStatus.canRequestAgain) {
+                onRationale(currentStatus.shouldShowRationale) {
+                    state.launchPermissionRequest()
+                }
+            } else {
+                onDenied(currentStatus.canRequestAgain) {
+                    currentContext.startActivity(currentContext.createPermissionSettingsIntent())
+                }
+            }
+        }
     }
 }
 

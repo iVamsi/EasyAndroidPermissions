@@ -94,6 +94,12 @@ public object PermissionManagerFactory {
     /**
      * Creates a [PermissionManager] for an [ActivityResultRegistryOwner] (e.g., custom lifecycle components).
      */
+    @Deprecated(
+        message = "Use create(lifecycleOwner, caller, contextProvider, rationaleProvider) instead. Will be removed in 3.0.0.",
+        replaceWith = ReplaceWith(
+            "create(lifecycleOwner = registryOwner as LifecycleOwner, caller = registryOwner as ActivityResultCaller, contextProvider = contextProvider, rationaleProvider = rationaleProvider)"
+        )
+    )
     public fun create(
         registryOwner: ActivityResultRegistryOwner,
         contextProvider: () -> Context?,

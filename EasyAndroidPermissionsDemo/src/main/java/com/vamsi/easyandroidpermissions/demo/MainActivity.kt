@@ -48,9 +48,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.vamsi.easyandroidpermissions.MediaAccess
+import com.vamsi.easyandroidpermissions.PermissionRequired
 import com.vamsi.easyandroidpermissions.PermissionResult
+import com.vamsi.easyandroidpermissions.SpecialPermission
 import com.vamsi.easyandroidpermissions.getMediaAccess
+import com.vamsi.easyandroidpermissions.isSpecialPermissionGranted
 import com.vamsi.easyandroidpermissions.requestMedia
+import com.vamsi.easyandroidpermissions.requestSpecialPermission
 import com.vamsi.easyandroidpermissions.isGranted
 import com.vamsi.easyandroidpermissions.demo.ui.theme.EasyAndroidPermissionsDemoTheme
 import com.vamsi.easyandroidpermissions.rememberPermissionManager
@@ -83,9 +87,11 @@ fun PermissionDemoScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val trackedStates by permissionManager.permissionStates.collectAsState()
     var mediaAccess by remember { mutableStateOf<MediaAccess?>(null) }
+    var canDrawOverlays by remember { mutableStateOf(false) }
     // Tracked states refresh on resume, so this also picks up changes made in Settings.
     LaunchedEffect(trackedStates) {
         mediaAccess = permissionManager.getMediaAccess()
+        canDrawOverlays = permissionManager.isSpecialPermissionGranted(SpecialPermission.SystemAlertWindow)
     }
     val commonPermissions = remember {
         buildList {
@@ -303,6 +309,67 @@ fun PermissionDemoScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(if (mediaAccess == MediaAccess.Partial) "Pick More Photos & Videos" else "Request Photos & Videos")
+        }
+
+        HorizontalDivider()
+
+        Text(
+            text = "Declarative PermissionRequired (Camera)",
+            style = MaterialTheme.typography.titleMedium
+        )
+        PermissionRequired(
+            permission = Manifest.permission.CAMERA,
+            onGranted = {
+                Text(
+                    text = "✓ Camera is ready (rendered via PermissionRequired onGranted)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            onRationale = { shouldShowRationale, onRequest ->
+                OutlinedButton(
+                    onClick = onRequest,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (shouldShowRationale) "Camera needed — Tap to Allow" else "Grant Camera (Declarative)")
+                }
+            },
+            onDenied = { _, onOpenSettings ->
+                OutlinedButton(
+                    onClick = onOpenSettings,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Open Settings to Enable Camera")
+                }
+            }
+        )
+
+        HorizontalDivider()
+
+        Text(
+            text = "Special Permissions (Display Over Other Apps)",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "Status: " + if (canDrawOverlays) "Granted" else "Not granted",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    canDrawOverlays = permissionManager.requestSpecialPermission(
+                        SpecialPermission.SystemAlertWindow
+                    )
+                    if (canDrawOverlays) {
+                        SnapNotify.showSuccess("✅ Overlay permission granted")
+                    } else {
+                        SnapNotify.showInfo("ℹ️ Overlay permission not granted")
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (canDrawOverlays) "Overlay Permission Granted ✓" else "Request Overlay Permission")
         }
         }
     }

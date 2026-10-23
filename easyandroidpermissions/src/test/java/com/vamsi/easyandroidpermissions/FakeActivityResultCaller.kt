@@ -1,5 +1,8 @@
 package com.vamsi.easyandroidpermissions
 
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -10,10 +13,13 @@ internal class FakeActivityResultCaller : ActivityResultCaller {
 
     private var singleCallback: ((Boolean) -> Unit)? = null
     private var multipleCallback: ((Map<String, Boolean>) -> Unit)? = null
+    private var activityResultCallback: ((ActivityResult) -> Unit)? = null
 
     var lastSinglePermission: String? = null
         private set
     var lastMultiplePermissions: List<String> = emptyList()
+        private set
+    var lastLaunchedIntent: Intent? = null
         private set
 
     override fun <I, O> registerForActivityResult(
@@ -39,6 +45,10 @@ internal class FakeActivityResultCaller : ActivityResultCaller {
         multipleCallback?.invoke(results)
     }
 
+    fun dispatchActivityResult(resultCode: Int = Activity.RESULT_OK, data: Intent? = null) {
+        activityResultCallback?.invoke(ActivityResult(resultCode, data))
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun <I, O> registerInternal(
         contract: ActivityResultContract<I, O>,
@@ -47,6 +57,7 @@ internal class FakeActivityResultCaller : ActivityResultCaller {
         return when (contract) {
             is ActivityResultContracts.RequestPermission -> SingleLauncher(contract, callback as androidx.activity.result.ActivityResultCallback<Boolean>) as ActivityResultLauncher<I>
             is ActivityResultContracts.RequestMultiplePermissions -> MultiLauncher(contract, callback as androidx.activity.result.ActivityResultCallback<Map<String, Boolean>>) as ActivityResultLauncher<I>
+            is ActivityResultContracts.StartActivityForResult -> IntentLauncher(contract, callback as androidx.activity.result.ActivityResultCallback<ActivityResult>) as ActivityResultLauncher<I>
             else -> error("Unsupported contract $contract")
         }
     }
@@ -78,6 +89,21 @@ internal class FakeActivityResultCaller : ActivityResultCaller {
 
         override fun unregister() {
             multipleCallback = null
+        }
+    }
+
+    private inner class IntentLauncher(
+        override val contract: ActivityResultContracts.StartActivityForResult,
+        private val callback: androidx.activity.result.ActivityResultCallback<ActivityResult>
+    ) : ActivityResultLauncher<Intent>() {
+
+        override fun launch(input: Intent, options: ActivityOptionsCompat?) {
+            lastLaunchedIntent = input
+            activityResultCallback = { result -> callback.onActivityResult(result) }
+        }
+
+        override fun unregister() {
+            activityResultCallback = null
         }
     }
 }
