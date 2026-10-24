@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.vamsi.easyandroidpermissions.demo"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.vamsi.easyandroidpermissions.demo"
