@@ -14,7 +14,7 @@ plugins {
 
 android {
     namespace = "com.vamsi.easyandroidpermissions.compose"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24
